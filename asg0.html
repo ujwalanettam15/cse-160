@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Draw a blue rectangle (canvas version)</title>
+  </head>
+
+  <body onload="main()">
+    <canvas id="example" width="400" height="400">
+      Please use a browser that supports "canvas"
+    </canvas>
+    <script src="asg0.js"></script>
+    <script src="lib/cuon-matrix-cse160.js"></script>
+  
+  <div class="controls">
+    <label for="x-coor">X Coordinate:</label>
+    <input type="number" id="x-coor" placeholder="X Coordinate" />
+    <label for="y-coor">Y Coordinate:</label>
+    <input type="number" id="y-coor" placeholder="Y Coordinate" />
+    <input type="button" id="draw" value="Draw Rectangle"/>
+  </div>
+  <div class="controls">
+    <label for="x-coor2">X Coordinate 2:</label>
+    <input type="number" id="x-coor2" placeholder="X Coordinate 2" />
+    <label for="y-coor2">Y Coordinate 2:</label>
+    <input type="number" id="y-coor2" placeholder="Y Coordinate 2" />
+    <input type="button" id="draw" value="Draw Second Vector"/>
+  </div>
+  <div class="controls">
+    <label for="operation">Operation:</label>
+    <select id="operation">
+        <option value="add">Add</option>
+        <option value="sub">Subtract</option>
+        <option value="mul">Multiply</option>
+        <option value="div">Divide</option>
+        <option value="mag">Magnitude</option>
+        <option value="nor">Normalize</option>
+        <option value="angle">Angle between</option>
+        <option value="area">Area</option>
+    </select>
+    <label for="op-value">Scalar:</label>
+    <input type="number" id="scalar" placeholder="0" />
+    <input type="button" id="perform" value="Perform Operation" onclick="handleDrawOperationEvent()"/>
+  </body>
+</html>
