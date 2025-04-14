@@ -22,6 +22,7 @@ let a_Position;
 let u_FragColor;
 let u_Size;
 
+
 function setupWebGL() {
   canvas = document.getElementById('webgl');
 
@@ -86,6 +87,8 @@ function addActionsForHtmlUI() {
   document.getElementById('circleButton').onclick = function() {
     g_selectedType = CIRCLE;
   };
+
+
 
   document.getElementById('redSlide').addEventListener('mouseup', function() {
     g_selectedColor[0] = this.value / 100;
