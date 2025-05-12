@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Change a point color</title>
+  </head>
+
+  <body onload="main()">
+    
+    <canvas id="webgl" width="400" height="400">
+    Please use a browser that supports "canvas"
+    </canvas>
+    <canvas id="webgl"></canvas>
+    <p>
+
+    <p id="numdot"> XXX </p>
+    <button type="button" id="green">Green</button>
+    <button type="button" id="red">Red</button>
+    <button type="button" id="clearButton">Clear</button>
+    <p id="fps"> XXX </p>
+
+    <button type="button" id="pointButton">Point</button>
+    <button type="button" id="triButton">Triangle</button>
+    <button type="button" id="circleButton">Circle</button>
+    <p>
+    Legs <input type="range" min="-50" max="50" value="100" class="slider" id="moveLegSlider" />
+    <p>
+    Ears <input type="range" min="-50" max="50" value="0" class="slider" id="moveEars" />
+    <p>
+    Head <input type="range" min="-50" max="50" value="0" class="slider" id="moveHead" />
+    <p>
+    FloppyEar <input type="range" min="-50" max="50" value="0" class="slider" id="moveFloppyEar" />
+    <p>
+    Magenta <input type="range" min="-45" max="45" value="0" class="slider" id="magentaSlide" />
+    <p>
+    Yellow <input type="range" min="-45" max="45" value="0" class="slider" id="yellowSlide" />
+    Animation:
+    <button type="button" id="animationYellowOnButton">ON</button>
+    <button type="button" id="animationYellowOffButton">OFF</button>
+    Camera Angle <input type="range" min="0" max="360" value="5" class="slider" id="angleSlide" />
+    <p>  
+    <script src="../lib/webgl-utils.js"></script>
+    <script src="../lib/webgl-debug.js"></script>
+    <script src="../lib/cuon-utils.js"></script>
+    <script src="../lib/cuon-matrix.js"></script>
+    <script src="Triangle.js"></script>
+    <script src="Circle.js"></script>
+    <script src="Point.js"></script>
+    <script src="Cube.js"></script>
+    <script src="Cone.js"></script>
+    <script src="blockyAnimal.js"></script>
+  </body>
+</html>
