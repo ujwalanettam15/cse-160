@@ -10,6 +10,7 @@ var VSHADER_SOURCE = `
   uniform mat4 u_viewMatrix;
   uniform mat4 u_ProjectionMatrix;
   uniform mat4 u_GlobalRotateMatrix;
+
   void main() {
     gl_Position =
       u_ProjectionMatrix * u_viewMatrix *
@@ -17,19 +18,48 @@ var VSHADER_SOURCE = `
     v_UV = a_UV;
   }`;
 
-var FSHADER_SOURCE = `
+  var FSHADER_SOURCE = `
   precision mediump float;
+
+  // UV coordinates from the vertex shader
   varying vec2 v_UV;
+
+  // For flat‐color draws
   uniform vec4 u_FragColor;
-  uniform sampler2D u_Sampler0;
-  uniform sampler2D u_Sampler1;
+
+  uniform sampler2D u_Sampler0;  // brick wall
+  uniform sampler2D u_Sampler1;  // pacman
+  uniform sampler2D u_Sampler2;  // grass
+  uniform sampler2D u_Sampler3;  // wood
+
+  // Which texture to use:
+  //  -2 = flat color, 0 = brick, 1 = pacman, 2 = grass, 3 = wood
   uniform int u_whichTexture;
+
   void main() {
     if (u_whichTexture == -2) {
+      // pure flat‐color
       gl_FragColor = u_FragColor;
-    } else {
-      // never used in this example
+    }
+    else if (u_whichTexture == 0) {
+      // brick wall
       gl_FragColor = texture2D(u_Sampler0, v_UV);
+    }
+    else if (u_whichTexture == 1) {
+      // pacman image
+      gl_FragColor = texture2D(u_Sampler1, v_UV);
+    }
+    else if (u_whichTexture == 2) {
+      // grass ground
+      gl_FragColor = texture2D(u_Sampler2, v_UV);
+    }
+    else if (u_whichTexture == 3) {
+      // wood blocks
+      gl_FragColor = texture2D(u_Sampler3, v_UV);
+    }
+    else {
+      // fallback
+      gl_FragColor = u_FragColor;
     }
   }`;
 
@@ -48,19 +78,26 @@ let u_whichTexture;
 let u_texWeight;
 let u_Sampler0;
 let u_Sampler1;
+let u_Sampler2;
+let u_Sampler3;
 let cubeVertexUVBuffer = null;  
 let frameCount = 0;
 let fpsLastTime = 0;
 let currentFps = 0;
 let g_walls = [];
+let g_pellets = []; 
 let WORLD_SIZE = 32;
 let dragging = false;
 let lastX = -1, lastY = -1;
 let g_yaw   = 0;  
 let g_pitch = 0; 
-const WALL_TEXTURE_SRC = './brick_wall.jpg';
+const WALL_TEXTURE_SRC = './brick_wall.png';
+const GRASS_TEXTURE_SRC = './grass.png';
+const WOOD_TEXTURE_SRC  = './wood.png';
+let woodTexture   = null;
 let wallTexture = null;
 let pacmanTexture = null;
+let grassTexture  = null;
 
 
 const pacmanMap = [
@@ -96,6 +133,8 @@ function connectVariablesToGLSL() {
   u_GlobalRotateMatrix= gl.getUniformLocation(gl.program, 'u_GlobalRotateMatrix');
   u_Sampler0          = gl.getUniformLocation(gl.program, 'u_Sampler0');
   u_Sampler1          = gl.getUniformLocation(gl.program, 'u_Sampler1');
+  u_Sampler2          = gl.getUniformLocation(gl.program, 'u_Sampler2');
+  u_Sampler3          = gl.getUniformLocation(gl.program, 'u_Sampler3');
 
   gl.uniformMatrix4fv(u_ModelMatrix, false, new Matrix4().elements);
   return true;
@@ -153,6 +192,7 @@ function initTextures() {
   wallImg.src = WALL_TEXTURE_SRC;
 }
 
+
 function initPacmanTexture() {
   const img = new Image();
   img.onload = () => {
@@ -169,6 +209,90 @@ function initPacmanTexture() {
     renderAllShapes();                        
   };
   img.src = 'pacman.jpg';  
+}
+
+function initGrassTexture() {
+  const img = new Image();
+  img.onload = () => {
+    grassTexture = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D, grassTexture);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
+    gl.texImage2D(
+      gl.TEXTURE_2D, 0,
+      gl.RGB, gl.RGB, gl.UNSIGNED_BYTE,
+      img
+    );
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.uniform1i(u_Sampler2, 2);
+    renderAllShapes();
+  };
+  img.src = GRASS_TEXTURE_SRC;
+}
+
+function initWoodTexture() {
+  const img = new Image();
+  img.onload = () => {
+    woodTexture = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE3);
+    gl.bindTexture(gl.TEXTURE_2D, woodTexture);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
+    gl.texImage2D(
+      gl.TEXTURE_2D, 0,
+      gl.RGB, gl.RGB, gl.UNSIGNED_BYTE,
+      img
+    );
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.uniform1i(u_Sampler3, 3);
+    renderAllShapes();
+  };
+  img.src = WOOD_TEXTURE_SRC;
+}
+
+function buildPellets() {
+  g_pellets = [];
+  const rows    = pacmanMap.length;
+  const cols    = pacmanMap[0].length;
+  const pelletY = -0.75 + 0.2;  // just above ground
+
+  for (let z = 0; z < rows; z++) {
+    for (let x = 0; x < cols; x++) {
+      if (pacmanMap[z][x] === '.') {
+        const p = new Cube();
+        p.textureNum = -2;           // flat color
+        p.color      = [1,1,0,1];    // yellow
+
+        p.matrix.setIdentity()
+          // center in the cell by adding +0.5 in X and Z
+          .translate(
+            x - cols/2 + 0.5,
+            pelletY,
+            z - rows/2 + 0.5
+          )
+          .scale(0.1, 0.1, 0.1);
+
+        g_pellets.push(p);
+      }
+    }
+  }
+}
+
+
+function eatPellets() {
+  const threshold = 0.5;  // how close you must get to “eat” one
+  const px = g_camera.eye.elements[0];
+  const pz = g_camera.eye.elements[2];
+
+  // iterate backwards so splice() is safe
+  for (let i = g_pellets.length - 1; i >= 0; i--) {
+    const m = g_pellets[i].matrix.elements;
+    const dx = m[12] - px;
+    const dz = m[14] - pz;
+    if (Math.hypot(dx, dz) < threshold) {
+      // we’ve “touched” this pellet → remove it
+      g_pellets.splice(i, 1);
+    }
+  }
 }
 
 let quadBuffer;
@@ -201,9 +325,9 @@ function buildWorld() {
         cube.textureNum = 0;            
         cube.color      = [1,1,1,1];    
         cube.matrix.setTranslate(
-          x - cols  / 2,                 // X
-          groundTop,                     // Y
-          z - rows / 2                  // Z
+          x - cols  / 2,              
+          groundTop,                  
+          z - rows / 2           
         );
 
         g_walls.push(cube);
@@ -265,44 +389,57 @@ function initCubeBuffers() {
 }             
 
 function modifyBlockInFront(isAdding) {
-  const rows = pacmanMap.length,
-        cols = pacmanMap[0].length;
+  const grid   = WORLD_SIZE;       // your 32
+  const half   = grid / 2;         // 16
+  const groundTop = -0.75 + 0.1;   // same as buildWorld
+
+  // 1) forward direction (x,z only)
   const dx = g_camera.at.elements[0] - g_camera.eye.elements[0];
   const dz = g_camera.at.elements[2] - g_camera.eye.elements[2];
   const len = Math.hypot(dx, dz);
-  const ux = dx / len, uz = dz / len;
+  const ux  = dx / len, uz = dz / len;
+
+  // 2) one unit ahead in world‐coords
   const wx = g_camera.eye.elements[0] + ux;
   const wz = g_camera.eye.elements[2] + uz;
-  const mapX = Math.round(wx + cols/2);
-  const mapZ = Math.round(wz + rows/2);
 
-  if (mapZ < 0 || mapZ >= rows || mapX < 0 || mapX >= cols) return;
-  const groundTop = -0.75 + 0.1;
-  const x0 = mapX - cols/2;
-  const z0 = mapZ - rows/2;
+  // 3) snap to integer grid cell (0…32)
+  const mapX = Math.round(wx + half);
+  const mapZ = Math.round(wz + half);
+
+  if (mapX < 0 || mapX > grid || mapZ < 0 || mapZ > grid) {
+    // outside your world
+    return;
+  }
+
+  // 4) convert back to centered coords
+  const x0 = mapX - half;
+  const z0 = mapZ - half;
 
   if (isAdding) {
-    
-    const cube = new Cube();
-    cube.textureNum = 0;         
-    cube.color      = [1,1,1,1];  
-    cube.matrix.setTranslate(x0, groundTop, z0);
-    g_walls.push(cube);
-    let row = pacmanMap[mapZ].split('');
-    row[mapX] = '#';
-    pacmanMap[mapZ] = row.join('');
-
+    // only add if no block already here
+    const exists = g_walls.some(cube => {
+      const m = cube.matrix.elements;
+      return Math.abs(m[12] - x0) < 1e-3
+          && Math.abs(m[14] - z0) < 1e-3;
+    });
+    if (!exists) {
+      const cube = new Cube();
+      cube.textureNum = 3;          // wood
+      cube.color      = [1,1,1,1];  // ignored when textured
+      cube.matrix.setTranslate(x0, groundTop, z0);
+      g_walls.push(cube);
+    }
   } else {
+    // remove the first matching cube
     for (let i = g_walls.length - 1; i >= 0; i--) {
       const m = g_walls[i].matrix.elements;
-      if (Math.abs(m[12] - x0) < 0.001 && Math.abs(m[14] - z0) < 0.001) {
+      if (Math.abs(m[12] - x0) < 1e-3
+       && Math.abs(m[14] - z0) < 1e-3) {
         g_walls.splice(i, 1);
         break;
       }
     }
-    let row = pacmanMap[mapZ].split('');
-    row[mapX] = '.';
-    pacmanMap[mapZ] = row.join('');
   }
 }
 
@@ -313,15 +450,15 @@ function keydown(ev) {
     case 'arrowleft':  g_camera.left();       break;
     case 'arrowup':    g_camera.forward();    break;
     case 'arrowdown':  g_camera.back();       break;
-    case 'a':          modifyBlockInFront(true);  break;
-    case 'd':          modifyBlockInFront(false); break;
+    case 'q':          g_camera.panLeft();  break;
+    case 'e':          g_camera.panRight(); break;
+    case 'b': modifyBlockInFront(true);  break; 
+    case 'd': modifyBlockInFront(false); break;
   }
   renderAllShapes();
 }
 window.addEventListener('keydown', keydown);
-
 document.onkeydown = keydown;
-
 
 function main() {
   setupWebGL();  
@@ -332,8 +469,11 @@ function main() {
   initCubeBuffers(); 
   initQuadBuffers();
   initTextures(gl);
+  initGrassTexture();
+  initWoodTexture();  
   gl.clearColor(0,0,0,1);
   buildWorld();
+  buildPellets();
   requestAnimationFrame(tick);
   renderAllShapes();
 }
@@ -446,21 +586,21 @@ function drawMap() {
 //var g_up = [0,1,0];
 
 function renderAllShapes() {
+  // Clear the canvas to sky‐blue and reset depth buffer
   gl.clearColor(0.5, 0.7, 1.0, 1.0);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+  // ——— 1) Projection matrix ———
   const projMat = new Matrix4();
   projMat.setPerspective(
-    50,                            
-    canvas.width / canvas.height,    
-    1,                                
-    100                            
+    50,                              // field of view in degrees
+    canvas.width / canvas.height,    // aspect ratio
+    1,                               // near clipping plane
+    100                              // far clipping plane
   );
-  gl.uniformMatrix4fv(
-    u_ProjectionMatrix,
-    false,
-    projMat.elements
-  );
+  gl.uniformMatrix4fv(u_ProjectionMatrix, false, projMat.elements);
+
+  // ——— 2) View (camera) matrix ———
   const viewMat = new Matrix4();
   viewMat.setLookAt(
     g_camera.eye.elements[0],
@@ -473,48 +613,53 @@ function renderAllShapes() {
     g_camera.up.elements[1],
     g_camera.up.elements[2]
   );
-  gl.uniformMatrix4fv(
-    u_ViewMatrix,
-    false,
-    viewMat.elements
-  );
+  gl.uniformMatrix4fv(u_ViewMatrix, false, viewMat.elements);
 
+  // ——— 3) Global rotation from mouse drag ———
   const globalRotMat = new Matrix4()
-    .rotate(g_yaw,   0, 1, 0)   
-    .rotate(g_pitch, 1, 0, 0);  
-  gl.uniformMatrix4fv(
-    u_GlobalRotateMatrix,
-    false,
-    globalRotMat.elements
-  );
+    .rotate(g_yaw,   0, 1, 0)
+    .rotate(g_pitch, 1, 0, 0);
+  gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, globalRotMat.elements);
 
+  // ——— 4) Draw the ground with grass texture ———
   const ground = new Cube();
-  ground.textureNum = -2;           
-  ground.color      = [0.4, 0.8, 0.4, 1.0];
-  ground.matrix.setIdentity();
-  ground.matrix
-    .translate(-WORLD_SIZE/2, -0.75, -WORLD_SIZE/2)
-    .scale(WORLD_SIZE, 0.1, WORLD_SIZE);
+  ground.textureNum = 2;        // grass
+  ground.color      = [1,1,1,1]; // ignored when textured
+  ground.matrix.setIdentity()
+                .translate(-WORLD_SIZE/2, -0.75, -WORLD_SIZE/2)
+                .scale(WORLD_SIZE, 0.1, WORLD_SIZE);
   ground.render();
-  for (const w of g_walls) {
-    w.render();
+
+  // ——— 5) Draw food pellets as small yellow cubes ———
+  for (const pellet of g_pellets) {
+    pellet.render();
+  }
+
+  // ——— 6) Draw all wall & wood blocks ———
+  for (const wall of g_walls) {
+    wall.render();
   }
 }
-
 
 function tick() {
   const now = performance.now();
   frameCount++;
   if (now - fpsLastTime >= 500) {
-    currentFps = frameCount * 1000 / (now - fpsLastTime);
-    fpsLastTime = now;
-    frameCount = 0;
-    document.getElementById('fps').textContent = currentFps.toFixed(1) + ' FPS';
+    currentFps   = frameCount * 1000 / (now - fpsLastTime);
+    fpsLastTime  = now;
+    frameCount   = 0;
+    document.getElementById('fps').textContent =
+      currentFps.toFixed(1) + ' FPS';
   }
+
+  // this will eat any pellets you walk into:
+  eatPellets();
+
+  // redraw everything (ground, pellets, walls):
   renderAllShapes();
+
   requestAnimationFrame(tick);
 }
-
 
 function sendTextToHTMLElement(text, htmlID) {
   var htmlElement = document.getElementById(htmlID);
