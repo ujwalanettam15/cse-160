@@ -1,0 +1,93 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Lighting</title>
+    
+</head>
+<body>
+    <h1 style="text-align: center; color: #333;">World with Lighting</h1>
+    
+    <canvas id="webgl" width="800" height="600"></canvas>
+    
+    <div class="section">
+        <h3>Rendering Controls</h3>
+        <div class="controls">
+            <button id="toggleLighting">Toggle Lighting</button>
+            <button id="toggleNormals">Toggle Normals</button>
+            <button id="animateLight">Animate Light</button>
+            <button id="toggleSpotlight">Toggle Spotlight</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>Light Position</h3>
+        <div class="control-group">
+            <div><span class="slider-label">Light X:</span><input type="range" id="lightX" min="-10" max="10" value="3" step="0.1"><span class="slider-value" id="lightXVal">3.0</span></div>
+            <div><span class="slider-label">Light Y:</span><input type="range" id="lightY" min="-10" max="10" value="5" step="0.1"><span class="slider-value" id="lightYVal">5.0</span></div>
+            <div><span class="slider-label">Light Z:</span><input type="range" id="lightZ" min="-10" max="10" value="3" step="0.1"><span class="slider-value" id="lightZVal">3.0</span></div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>Light Color</h3>
+        <div class="control-group">
+            <div><span class="slider-label">Light Red:</span><input type="range" id="lightR" min="0" max="1" value="1" step="0.01"><span class="slider-value" id="lightRVal">1.00</span></div>
+            <div><span class="slider-label">Light Green:</span><input type="range" id="lightG" min="0" max="1" value="1" step="0.01"><span class="slider-value" id="lightGVal">1.00</span></div>
+            <div><span class="slider-label">Light Blue:</span><input type="range" id="lightB" min="0" max="1" value="1" step="0.01"><span class="slider-value" id="lightBVal">1.00</span></div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>Camera Controls</h3>
+        <div class="control-group">
+            <div><span class="slider-label">Camera Angle:</span><input type="range" id="cameraAngle" min="0" max="360" value="45" step="1"><span class="slider-value" id="cameraAngleVal">45</span></div>
+            <div><span class="slider-label">Camera Distance:</span><input type="range" id="cameraDistance" min="3" max="15" value="8" step="0.1"><span class="slider-value" id="cameraDistanceVal">8.0</span></div>
+            <div><span class="slider-label">Camera Height:</span><input type="range" id="cameraHeight" min="-5" max="10" value="2" step="0.1"><span class="slider-value" id="cameraHeightVal">2.0</span></div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>Spotlight Settings</h3>
+        <div class="control-group">
+            <div><span class="slider-label">Spotlight Cutoff:</span><input type="range" id="spotCutoff" min="5" max="45" value="15" step="1"><span class="slider-value" id="spotCutoffVal">15</span></div>
+            <div><span class="slider-label">Spotlight Focus:</span><input type="range" id="spotFocus" min="1" max="100" value="32" step="1"><span class="slider-value" id="spotFocusVal">32</span></div>
+        </div>
+    </div>
+
+    <div style="display: none;">
+        <p id="numdot">XXX</p>
+        <button type="button" id="green">Green</button>
+        <button type="button" id="red">Red</button>
+        <button type="button" id="clearButton">Clear</button>
+        <p id="fps">XXX</p>
+        <button type="button" id="pointButton">Point</button>
+        <button type="button" id="triButton">Triangle</button>
+        <button type="button" id="circleButton">Circle</button>
+        <button type="button" id="normalVisButton">Toggle Normal Visualization</button>
+        <button type="button" id="lightingButton">Toggle Lighting</button>
+        <button type="button" id="animateLightButton">Toggle Light Animation</button>
+        <p>Magenta <input type="range" min="-45" max="45" value="0" class="slider" id="magentaSlide" /></p>
+        <p>Yellow <input type="range" min="-45" max="45" value="0" class="slider" id="yellowSlide" /></p>
+        <p>Animation: <button type="button" id="animationYellowOnButton">ON</button> <button type="button" id="animationYellowOffButton">OFF</button></p>
+        <p>Camera Angle <input type="range" min="0" max="360" value="5" class="slider" id="angleSlide" /></p>
+    </div>
+
+    <script src="../lib/webgl-utils.js"></script>
+    <script src="../lib/webgl-debug.js"></script>
+    <script src="../lib/cuon-utils.js"></script>
+    <script src="../lib/cuon-matrix.js"></script>
+    
+    <!-- Your custom JavaScript files -->
+    <script src="Matrix4.js"></script>
+    <script src="Triangle.js"></script>
+    <script src="Circle.js"></script>
+    <script src="Point.js"></script>
+    <script src="Cube.js"></script>
+    <script src="Cone.js"></script>
+    <script src="Sphere.js"></script>
+    <script src="Camera.js"></script>
+    <script src="World.js"></script>
+</body>
+</html>
